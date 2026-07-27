@@ -18,6 +18,7 @@ export interface PipelineResult {
     afterFilter: number;
     upserted: number;
     error?: string;
+    upsertErrors?: string[];
   }>;
 }
 
@@ -43,6 +44,7 @@ export async function runPipeline(
       let afterDedup = 0;
       let afterFilter = 0;
       let upserted = 0;
+      let upsertErrors: string[] = [];
 
       if (raw.length > 0) {
         const deduped = deduplicateEvents(
@@ -52,11 +54,20 @@ export async function runPipeline(
         const classified = classifyAll(deduped);
         const filtered = applyFilters(classified);
         afterFilter = filtered.length;
-        upserted = await batchUpsertEvents(filtered, env);
+        const result = await batchUpsertEvents(filtered, env);
+        upserted = result.added;
+        upsertErrors = result.errors;
         totalAdded += upserted;
       }
       sourcesOk++;
-      debug.push({ adapter: adapter.name, fetched: raw.length, afterDedup, afterFilter, upserted });
+      debug.push({
+        adapter: adapter.name,
+        fetched: raw.length,
+        afterDedup,
+        afterFilter,
+        upserted,
+        ...(upsertErrors.length ? { upsertErrors } : {}),
+      });
     } catch (e) {
       sourcesErr++;
       debug.push({

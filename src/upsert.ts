@@ -25,9 +25,13 @@ function toRow(ev: ClassifiedEvent) {
 }
 
 /** Upsert a batch di 50 (limite ragionevole per singola richiesta REST) */
-export async function batchUpsertEvents(events: ClassifiedEvent[], env: Env): Promise<number> {
-  if (!events.length) return 0;
+export async function batchUpsertEvents(
+  events: ClassifiedEvent[],
+  env: Env
+): Promise<{ added: number; errors: string[] }> {
+  if (!events.length) return { added: 0, errors: [] };
   let added = 0;
+  const errors: string[] = [];
 
   for (let i = 0; i < events.length; i += 50) {
     const chunk = events.slice(i, i + 50).map(toRow);
@@ -37,10 +41,15 @@ export async function batchUpsertEvents(events: ClassifiedEvent[], env: Env): Pr
         headers: { 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
         body: JSON.stringify(chunk),
       });
-      if (r.ok) added += chunk.length;
-    } catch {
-      // un batch fallito non deve bloccare i successivi
+      if (r.ok) {
+        added += chunk.length;
+      } else {
+        const body = await r.text().catch(() => '');
+        errors.push(`HTTP ${r.status}: ${body.slice(0, 300)}`);
+      }
+    } catch (e) {
+      errors.push((e as Error).message);
     }
   }
-  return added;
+  return { added, errors };
 }
