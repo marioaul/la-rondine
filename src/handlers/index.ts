@@ -84,6 +84,22 @@ export async function handleCleanup(request: Request, env: Env): Promise<Respons
   return jsonResp({ ok: r.ok, deleted, status: r.status });
 }
 
+export async function handleDebugCount(_request: Request, env: Env): Promise<Response> {
+  try {
+    const r = await supaFetch(env, '/rest/v1/events?select=count', { headers: { Prefer: 'count=exact' } });
+    const rawBody = await r.text();
+    return jsonResp({
+      ok: true,
+      status: r.status,
+      contentRangeHeader: r.headers.get('content-range'),
+      allHeaders: Object.fromEntries(r.headers.entries()),
+      rawBody,
+    });
+  } catch (e) {
+    return jsonResp({ ok: false, error: (e as Error).message }, 500);
+  }
+}
+
 export function handleOptions(): Response {
   return new Response(null, { headers: CORS_HEADERS });
 }

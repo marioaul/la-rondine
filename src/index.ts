@@ -5,6 +5,7 @@ import { customSourcesAdapter } from './adapters/custom';
 import { runPipeline, loadRuntimeConfig } from './pipeline';
 import {
   handleCleanup,
+  handleDebugCount,
   handleOptions,
   handleSearch,
   handleStatus,
@@ -34,6 +35,7 @@ export default {
     if (path === '/search') return handleSearch(request, env);
     if (path === '/cleanup') return handleCleanup(request, env);
     if (path === '/sources') return handleSources(request, env);
+    if (path === '/debug-count') return handleDebugCount(request, env);
 
     return jsonResp({ error: 'Not found', path }, 404);
   },
