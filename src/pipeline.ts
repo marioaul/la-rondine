@@ -3,6 +3,7 @@ import { classifyAll } from './classify';
 import { applyFilters, deduplicateEvents } from './filter';
 import { batchUpsertEvents } from './upsert';
 import { logRun, supaFetch } from './supabase';
+import { parseCountResponse } from './utils/count';
 
 export interface PipelineResult {
   added: number;
@@ -87,9 +88,8 @@ export async function runPipeline(
       headers: { Prefer: 'count=exact' },
     });
     if (totalR.ok) {
-      const cr = totalR.headers.get('content-range') ?? '';
-      const match = cr.match(/\/(\d+)$/);
-      eventsTotal = match?.[1] ? parseInt(match[1], 10) : 0;
+      const body = await totalR.json().catch(() => null);
+      eventsTotal = parseCountResponse(totalR.headers.get('content-range'), body);
     }
   } catch {
     // non blocca il risultato della pipeline

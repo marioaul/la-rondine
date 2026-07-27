@@ -1,6 +1,7 @@
 import type { Env, SourceAdapter } from '../types';
 import { runPipeline, loadRuntimeConfig } from '../pipeline';
 import { supaFetch } from '../supabase';
+import { parseCountResponse } from '../utils/count';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -31,10 +32,13 @@ export async function handleStatus(_request: Request, env: Env): Promise<Respons
       supaFetch(env, '/rest/v1/events?select=count', { headers: { Prefer: 'count=exact' } }),
       supaFetch(env, '/rest/v1/cron_log?select=*&order=run_at.desc&limit=10'),
     ]);
-    const total =
-      totalR.status === 'fulfilled' && totalR.value.ok
-        ? parseInt(totalR.value.headers.get('content-range')?.split('/')?.[1] ?? '0', 10)
-        : 0;
+
+    let total = 0;
+    if (totalR.status === 'fulfilled' && totalR.value.ok) {
+      const body = await totalR.value.json().catch(() => null);
+      total = parseCountResponse(totalR.value.headers.get('content-range'), body);
+    }
+
     const logs = logsR.status === 'fulfilled' && logsR.value.ok ? await logsR.value.json() : [];
     return jsonResp({ ok: true, total_events: total, recent_runs: logs });
   } catch (e) {
