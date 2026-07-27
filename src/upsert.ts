@@ -36,7 +36,7 @@ export async function batchUpsertEvents(
   for (let i = 0; i < events.length; i += 50) {
     const chunk = events.slice(i, i + 50).map(toRow);
     try {
-      const r = await supaFetch(env, '/rest/v1/events', {
+      const r = await supaFetch(env, '/rest/v1/events?on_conflict=dedup_hash', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
         body: JSON.stringify(chunk),
