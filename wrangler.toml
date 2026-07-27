@@ -1,0 +1,19 @@
+name = "rondine-worker-v2"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+# Cron: ogni 3 ore (adatta secondo necessità)
+[triggers]
+crons = ["0 */3 * * *"]
+
+[vars]
+# Variabili NON sensibili qui. I secret (SUPABASE_KEY, TICKETMASTER_KEY, WORKER_SECRET, ecc.)
+# vanno impostati SOLO con: wrangler secret put NOME_VARIABILE
+# oppure da Dashboard Cloudflare → Settings → Variables and Secrets → tipo "Secret".
+SUPABASE_URL = "https://YOUR_PROJECT.supabase.co"
+
+# ── Ambiente di staging separato (facoltativo ma consigliato) ──
+[env.staging]
+name = "rondine-worker-v2-staging"
+[env.staging.vars]
+SUPABASE_URL = "https://YOUR_PROJECT.supabase.co"

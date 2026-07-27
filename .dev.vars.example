@@ -1,0 +1,5 @@
+SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+SUPABASE_KEY=your-service-role-or-anon-key
+WORKER_SECRET=un-secret-a-caso-per-endpoint-protetti
+TICKETMASTER_KEY=your-ticketmaster-key
+VIVATICKET_TOKEN=your-vivaticket-token
