@@ -4,7 +4,7 @@ compatibility_date = "2025-01-01"
 
 # Cron: ogni 3 ore (adatta secondo necessità)
 [triggers]
-crons = ["0 */3 * * *, "0 9 * * *""]
+crons = ["0 */3 * * *, 0 9 * * *""]
 
 [vars]
 # Variabili NON sensibili qui. I secret (SUPABASE_KEY, TICKETMASTER_KEY, WORKER_SECRET, ecc.)
