@@ -21,10 +21,55 @@ interface IncomingSource {
   quality_override?: number;
 }
 
+interface IngestionSourceRow {
+  id: string;
+  source_name: string;
+  source_url: string;
+  provincia: string | null;
+  source_type: string;
+  is_enabled: boolean;
+  notes: string | null;
+  quality_override: number | null;
+}
+
 export async function handleSources(request: Request, env: Env): Promise<Response> {
-  if (request.method !== 'POST') return jsonResp({ error: 'Method not allowed' }, 405);
   if (!(await verifyAdmin(request, env))) return jsonResp({ error: 'Unauthorized' }, 401);
 
+  if (request.method === 'GET') return handleListSources(env);
+  if (request.method === 'DELETE') return handleDeleteSource(request, env);
+  if (request.method === 'POST') return handleAddSources(request, env);
+  return jsonResp({ error: 'Method not allowed' }, 405);
+}
+
+async function handleListSources(env: Env): Promise<Response> {
+  try {
+    const r = await supaFetch(
+      env,
+      '/rest/v1/ingestion_sources?select=id,source_name,source_url,provincia,source_type,is_enabled,notes,quality_override&order=source_name.asc'
+    );
+    if (!r.ok) return jsonResp({ ok: false, sources: [] });
+    const sources = (await r.json()) as IngestionSourceRow[];
+    return jsonResp({ ok: true, sources });
+  } catch (e) {
+    return jsonResp({ ok: false, error: (e as Error).message }, 500);
+  }
+}
+
+async function handleDeleteSource(request: Request, env: Env): Promise<Response> {
+  const id = new URL(request.url).searchParams.get('id');
+  if (!id) return jsonResp({ ok: false, error: 'Parametro id mancante' }, 400);
+
+  try {
+    const r = await supaFetch(env, `/rest/v1/ingestion_sources?id=eq.${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+    return jsonResp({ ok: r.ok });
+  } catch (e) {
+    return jsonResp({ ok: false, error: (e as Error).message }, 500);
+  }
+}
+
+async function handleAddSources(request: Request, env: Env): Promise<Response> {
   try {
     const body = (await request.json()) as { sources?: Array<IncomingSource | string> };
     const rawSources = body.sources ?? [];
