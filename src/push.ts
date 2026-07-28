@@ -36,13 +36,13 @@ export function groupSubscriptionsByUser(
 async function sendPushToSubscription(
   env: Env,
   sub: PushSubscriptionRow,
-  payload: { title: string; body: string }
+  notification: { title: string; body: string }
 ): Promise<'ok' | 'expired' | 'error'> {
   try {
     const { endpoint, headers, body } = await buildPushHTTPRequest({
       privateJWK: JSON.parse(env.VAPID_PRIVATE_KEY_JWK),
       subscription: { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-      message: { payload, adminContact: 'mailto:info@rondine.app', options: { ttl: 86400 } },
+      message: { payload: { notification }, adminContact: 'mailto:info@rondine.app', options: { ttl: 86400 } },
     });
     const r = await fetch(endpoint, { method: 'POST', headers, body });
     if (r.status === 404 || r.status === 410) return 'expired';
