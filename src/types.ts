@@ -66,6 +66,7 @@ export interface Env {
   SUPABASE_URL: string;
   SUPABASE_KEY: string;
   WORKER_SECRET: string;
+  VAPID_PRIVATE_KEY_JWK: string;
   TICKETMASTER_KEY?: string;
   VIVATICKET_TOKEN?: string;
 }

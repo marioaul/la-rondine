@@ -20,5 +20,8 @@
     "typescript": "^5.4.0",
     "vitest": "^1.6.0",
     "wrangler": "^3.60.0"
+  },
+  "dependencies": {
+    "@pushforge/builder": "^2.0.5"
   }
 }
