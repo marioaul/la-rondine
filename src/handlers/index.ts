@@ -2,11 +2,12 @@ import type { Env, SourceAdapter } from '../types';
 import { runPipeline, loadRuntimeConfig } from '../pipeline';
 import { supaFetch } from '../supabase';
 import { parseCountResponse } from '../utils/count';
+import { verifyAdmin } from '../admin-auth';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, X-Worker-Secret',
+  'Access-Control-Allow-Headers': 'Content-Type, X-Worker-Secret, Authorization',
 };
 
 export function jsonResp(data: unknown, status = 200): Response {
@@ -18,6 +19,7 @@ export function jsonResp(data: unknown, status = 200): Response {
 
 export async function handleTrigger(request: Request, env: Env, adapters: SourceAdapter[]): Promise<Response> {
   if (request.method !== 'POST') return jsonResp({ error: 'Method not allowed' }, 405);
+  if (!(await verifyAdmin(request, env))) return jsonResp({ error: 'Unauthorized' }, 401);
   try {
     const result = await runPipeline(env, loadRuntimeConfig(env), adapters);
     return jsonResp({ ok: true, ...result });
@@ -51,11 +53,13 @@ export async function handleSearch(request: Request, env: Env): Promise<Response
   const q = url.searchParams.get('q') ?? '';
   const provincia = url.searchParams.get('provincia') ?? '';
   const categoria = url.searchParams.get('categoria') ?? '';
+  const date = url.searchParams.get('date') ?? '';
 
   if (!q && !provincia && !categoria) return jsonResp({ events: [] });
 
   const today = new Date().toISOString().slice(0, 10);
-  let path = `/rest/v1/events?select=*&is_active=eq.true&event_date=gte.${today}&order=event_date.asc&limit=100`;
+  const fromDate = date || today;
+  let path = `/rest/v1/events?select=*&is_active=eq.true&event_date=gte.${fromDate}&order=event_date.asc&limit=100`;
   if (q) path += `&or=(title.ilike.*${encodeURIComponent(q)}*,description.ilike.*${encodeURIComponent(q)}*)`;
   if (provincia) path += `&provincia=ilike.*${encodeURIComponent(provincia)}*`;
   if (categoria && categoria !== 'tutte') path += `&categoria=eq.${encodeURIComponent(categoria)}`;
@@ -70,8 +74,11 @@ export async function handleSearch(request: Request, env: Env): Promise<Response
 }
 
 export async function handleCleanup(request: Request, env: Env): Promise<Response> {
-  const auth = request.headers.get('X-Worker-Secret');
-  if (!auth || auth !== env.WORKER_SECRET) return jsonResp({ error: 'Unauthorized' }, 401);
+  const secretHeader = request.headers.get('X-Worker-Secret');
+  const validSecret = !!secretHeader && secretHeader === env.WORKER_SECRET;
+  if (!validSecret && !(await verifyAdmin(request, env))) {
+    return jsonResp({ error: 'Unauthorized' }, 401);
+  }
 
   const today = new Date().toISOString().slice(0, 10);
   const countR = await supaFetch(env, `/rest/v1/events?event_date=lt.${today}&select=count`, {

@@ -1,6 +1,7 @@
 import type { Env } from '../types';
 import { supaFetch } from '../supabase';
 import { jsonResp } from './index';
+import { verifyAdmin } from '../admin-auth';
 
 interface IncomingSource {
   url?: string;
@@ -22,6 +23,7 @@ interface IncomingSource {
 
 export async function handleSources(request: Request, env: Env): Promise<Response> {
   if (request.method !== 'POST') return jsonResp({ error: 'Method not allowed' }, 405);
+  if (!(await verifyAdmin(request, env))) return jsonResp({ error: 'Unauthorized' }, 401);
 
   try {
     const body = (await request.json()) as { sources?: Array<IncomingSource | string> };
