@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getTomorrowDateString, groupSubscriptionsByUser } from '../src/push';
+import { getTomorrowDateString, groupNativeTokensByUser, groupSubscriptionsByUser } from '../src/push';
 
 describe('getTomorrowDateString', () => {
   it('restituisce il giorno successivo in formato YYYY-MM-DD', () => {
@@ -27,5 +27,22 @@ describe('groupSubscriptionsByUser', () => {
 
   it('restituisce una mappa vuota per un array vuoto', () => {
     expect(groupSubscriptionsByUser([]).size).toBe(0);
+  });
+});
+
+describe('groupNativeTokensByUser', () => {
+  it('raggruppa i token nativi per user_id', () => {
+    const tokens = [
+      { id: '1', user_id: 'u1', token: 't1', platform: 'android' as const },
+      { id: '2', user_id: 'u1', token: 't2', platform: 'ios' as const },
+      { id: '3', user_id: 'u2', token: 't3', platform: 'android' as const },
+    ];
+    const grouped = groupNativeTokensByUser(tokens);
+    expect(grouped.get('u1')).toHaveLength(2);
+    expect(grouped.get('u2')).toHaveLength(1);
+  });
+
+  it('restituisce una mappa vuota per un array vuoto', () => {
+    expect(groupNativeTokensByUser([]).size).toBe(0);
   });
 });
